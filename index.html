@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Top 10 Stock Markets Live</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            margin-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .time-display {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.95em;
+        }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .legend-color.green {
+            background: #10b981;
+        }
+
+        .legend-color.orange {
+            background: #f59e0b;
+        }
+
+        .legend-color.red {
+            background: #ef4444;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        .market-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            border-left: 5px solid #ddd;
+        }
+
+        .market-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .market-card.green {
+            border-left-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, white 100%);
+        }
+
+        .market-card.orange {
+            border-left-color: #f59e0b;
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, white 100%);
+        }
+
+        .market-card.red {
+            border-left-color: #ef4444;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, white 100%);
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .market-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .market-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .badge {
+            padding: 5px 10px;
+            border-radius: 50px;
+            font-size: 0.75em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .badge.closed {
+            background: #f3f4f6;
+            color: #6b7280;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge.alert {
+            background: #fecaca;
+            color: #991b1b;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .market-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .market-change {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .change-percent {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .change-percent.positive {
+            color: #10b981;
+        }
+
+        .change-percent.negative {
+            color: #ef4444;
+        }
+
+        .change-points {
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .market-details {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #6b7280;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .detail-value {
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .exchange {
+            display: inline-block;
+            background: #f3f4f6;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .loading {
+            text-align: center;
+            color: white;
+            font-size: 1.2em;
+            padding: 40px;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            border-left: 4px solid #ef4444;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .legend {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌍 Global Top 10 Stock Markets Live</h1>
+        <p>Real-time market data updated every 60 seconds</p>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="fetchMarketData()">🔄 Refresh Now</button>
+        <div class="time-display" id="timeDisplay">Initializing...</div>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-color green">✓</div>
+            <span>Up >1%</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color orange">⚠</div>
+            <span>Up 0-1%</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color red">✗</div>
+            <span>Negative</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #f3f4f6; color: #6b7280; font-size: 1em;">★</div>
+            <span>Market Closed</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #fecaca; color: #991b1b; animation: pulse 1.5s infinite;">📢</div>
+            <span>Alert (±2%)</span>
+        </div>
+    </div>
+
+    <div id="container" class="container">
+        <div class="loading">Loading market data...</div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
