@@ -1,0 +1,28 @@
+# Node modules
+node_modules/
+npm-debug.log
+package-lock.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Build files
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+
+# Cache
+.cache/
+.parcel-cache/
+
+# OS files
+Thumbs.db
+.DS_Store
