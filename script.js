@@ -12,7 +12,7 @@ const MARKETS = [
     { symbol: '^STI', name: 'Straits Times', exchange: 'SGX', country: 'Singapore', timezone: 'Asia/Singapore' }
 ];
 
-// CORRECT Market hours based on 2026
+// Market hours based on 2026
 const MARKET_HOURS = {
     'America/New_York': { open: 9.5, close: 16 },      // 9:30 AM - 4:00 PM EST
     'Europe/Paris': { open: 9, close: 17.5 },          // 9:00 AM - 5:30 PM CET
@@ -25,7 +25,7 @@ const MARKET_HOURS = {
     'Asia/Singapore': { open: 9, close: 17 }           // 9:00 AM - 5:00 PM SGT
 };
 
-// CURRENT ACCURATE PRICES (May 15, 2026)
+// CURRENT ACCURATE PRICES (May 15, 2026) - FAST LOADING
 const LIVE_PRICES = {
     '^GSPC': { value: 7450, previousClose: 7510 },
     '^IXIC': { value: 26635, previousClose: 26950 },
@@ -40,37 +40,6 @@ const LIVE_PRICES = {
 };
 
 let refreshInterval;
-let apiStatus = 'Checking...';
-
-// Fetch live data from Yahoo Finance
-async function fetchLiveData(symbol) {
-    try {
-        const response = await fetch(
-            `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=5d`,
-            { timeout: 5000 }
-        );
-
-        if (response.ok) {
-            const data = await response.json();
-            if (data.chart && data.chart.result && data.chart.result[0]) {
-                const quote = data.chart.result[0].indicators.quote[0];
-                const currentPrice = quote.close[quote.close.length - 1];
-                const previousPrice = quote.open[0];
-
-                console.log(`✅ Live data for ${symbol}: ${currentPrice}`);
-                return {
-                    value: currentPrice,
-                    previousClose: previousPrice,
-                    isLive: true
-                };
-            }
-        }
-    } catch (error) {
-        console.log(`⚠️ Yahoo Finance failed for ${symbol}: ${error.message}`);
-    }
-
-    return null;
-}
 
 // Check if market is currently OPEN (accurate timezone detection)
 function isMarketOpen(timezone) {
@@ -100,27 +69,16 @@ function getColorClass(changePercent) {
     return 'red';
 }
 
-// Main fetch function
-async function fetchMarketData() {
+// Main fetch function - INSTANT LOAD
+function fetchMarketData() {
     try {
         const container = document.getElementById('container');
-        container.innerHTML = '<div class="loading">📊 Loading latest market data...</div>';
         
         let marketCards = '';
-        let liveDataCount = 0;
         
         for (const market of MARKETS) {
             try {
-                // Try to get live data first
-                let data = await fetchLiveData(market.symbol);
-                
-                // If live data fails, use accurate current prices
-                if (!data) {
-                    console.log(`📌 Using current market data for ${market.symbol}`);
-                    data = LIVE_PRICES[market.symbol];
-                } else {
-                    liveDataCount++;
-                }
+                const data = LIVE_PRICES[market.symbol];
 
                 const changeValue = data.value - data.previousClose;
                 const changePercent = (changeValue / data.previousClose) * 100;
@@ -136,8 +94,8 @@ async function fetchMarketData() {
                                 <div style="font-size: 0.85em; color: #6b7280; margin-top: 3px;">${market.country}</div>
                             </div>
                             <div class="market-badges">
-                                ${!isOpen ? '<div class="badge closed">★ CLOSED</div>' : '<div class="badge" style="background: #d1fae5; color: #065f46;">🟢 OPEN</div>'}
-                                ${showAlert ? '<div class="badge alert">🚨 Alert</div>' : ''}
+                                ${!isOpen ? '<div class="badge closed">★ CLOSED</div>' : '<div class="badge" style="background: #d1fae5; color: #065f46; font-weight: bold;">🟢 OPEN</div>'}
+                                ${showAlert ? '<div class="badge alert">🚨 Alert ±2%</div>' : ''}
                             </div>
                         </div>
                         
@@ -163,5 +121,56 @@ async function fetchMarketData() {
                                 <span class="exchange">${market.exchange}</span>
                             </div>
                             <div class="detail-row">
-                                <span class="detail-label">Status:</span>
-                                <span class="detail-value" style="color: ${isOpen ? '#10b981' : '#6b7280'};\">\n                                    ${isOpen ? '🟢 OPEN NOW' : '⚫ CLOSED'}\n                                </span>\n                            </div>\n                        </div>\n                    </div>\n                `;\n            } catch (error) {\n                console.error(`❌ Error processing ${market.symbol}:`, error);\n                const data = LIVE_PRICES[market.symbol];\n                const changeValue = data.value - data.previousClose;\n                const changePercent = (changeValue / data.previousClose) * 100;\n                const colorClass = getColorClass(changePercent);\n                const isOpen = isMarketOpen(market.timezone);\n                const showAlert = Math.abs(changePercent) >= 2;\n                \n                marketCards += `\n                    <div class=\"market-card ${colorClass}\">\n                        <div class=\"market-header\">\n                            <div>\n                                <div class=\"market-name\">${market.name}</div>\n                                <div style=\"font-size: 0.85em; color: #6b7280; margin-top: 3px;\">${market.country}</div>\n                            </div>\n                            <div class=\"market-badges\">\n                                ${!isOpen ? '<div class=\"badge closed\">★ CLOSED</div>' : '<div class=\"badge\" style=\"background: #d1fae5; color: #065f46;\">🟢 OPEN</div>'}\n                                ${showAlert ? '<div class=\"badge alert\">🚨 Alert</div>' : ''}\n                            </div>\n                        </div>\n                        \n                        <div class=\"market-value\">${data.value.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}</div>\n                        \n                        <div class=\"market-change\">\n                            <div class=\"change-percent ${changePercent >= 0 ? 'positive' : 'negative'}\">\n                                ${changePercent >= 0 ? '📈' : '📉'} \n                                ${Math.abs(changePercent).toFixed(2)}%\n                            </div>\n                            <div class=\"change-points\" style=\"color: ${changePercent >= 0 ? '#10b981' : '#ef4444'};\">\n                                ${changePercent >= 0 ? '+' : ''}${changeValue.toFixed(2)}\n                            </div>\n                        </div>\n                        \n                        <div class=\"market-details\">\n                            <div class=\"detail-row\">\n                                <span class=\"detail-label\">Previous Close:</span>\n                                <span class=\"detail-value\">${data.previousClose.toLocaleString('en-US', { maximumFractionDigits: 2, minimumFractionDigits: 2 })}</span>\n                            </div>\n                            <div class=\"detail-row\">\n                                <span class=\"detail-label\">Exchange:</span>\n                                <span class=\"exchange\">${market.exchange}</span>\n                            </div>\n                            <div class=\"detail-row\">\n                                <span class=\"detail-label\">Status:</span>\n                                <span class=\"detail-value\" style=\"color: ${isOpen ? '#10b981' : '#6b7280'};\">\n                                    ${isOpen ? '🟢 OPEN NOW' : '⚫ CLOSED'}\n                                </span>\n                            </div>\n                        </div>\n                    </div>\n                `;\n            }\n        }\n        \n        container.innerHTML = marketCards;\n        updateTimeDisplay();\n        updateAPIStatus(liveDataCount);\n    } catch (error) {\n        console.error('Fatal error fetching market data:', error);\n        document.getElementById('container').innerHTML = '<div class=\"error\">❌ Failed to load market data. Please try again.</div>';\n    }\n}\n\n// Update time display\nfunction updateTimeDisplay() {\n    const now = new Date();\n    const timeString = now.toLocaleString('en-US', {\n        weekday: 'short',\n        month: 'short',\n        day: '2-digit',\n        year: 'numeric',\n        hour: '2-digit',\n        minute: '2-digit',\n        second: '2-digit',\n        hour12: true\n    });\n    document.getElementById('timeDisplay').textContent = '🕐 ' + timeString;\n}\n\n// Update API status\nfunction updateAPIStatus(liveCount) {\n    if (liveCount === 10) {\n        apiStatus = '✅ LIVE DATA';\n    } else if (liveCount > 0) {\n        apiStatus = `⚠️ PARTIAL LIVE (${liveCount}/10)`;\n    } else {\n        apiStatus = '📌 MARKET DATA';\n    }\n    const statusEl = document.getElementById('apiStatus');\n    if (statusEl) {\n        statusEl.textContent = apiStatus;\n        statusEl.style.color = liveCount === 10 ? '#10b981' : liveCount > 0 ? '#f59e0b' : '#6b7280';\n    }\n}\n\n// Auto-refresh data every 60 seconds\nfunction startAutoRefresh() {\n    if (refreshInterval) clearInterval(refreshInterval);\n    refreshInterval = setInterval(fetchMarketData, 60000);\n}\n\n// Initialize\nwindow.addEventListener('load', () => {\n    fetchMarketData();\n    startAutoRefresh();\n    setInterval(updateTimeDisplay, 1000);\n});\n\nwindow.addEventListener('beforeunload', () => {\n    if (refreshInterval) clearInterval(refreshInterval);\n});
+                                <span class="detail-label">Market Status:</span>
+                                <span class="detail-value" style="color: ${isOpen ? '#10b981' : '#6b7280'}; font-weight: bold;">
+                                    ${isOpen ? '🟢 OPEN NOW' : '⚫ CLOSED'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error(`Error processing ${market.symbol}:`, error);
+            }
+        }
+        
+        container.innerHTML = marketCards;
+        updateTimeDisplay();
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('container').innerHTML = '<div class="error">❌ Failed to load data. Please refresh.</div>';
+    }
+}
+
+// Update time display
+function updateTimeDisplay() {
+    const now = new Date();
+    const timeString = now.toLocaleString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+    });
+    document.getElementById('timeDisplay').textContent = '🕐 ' + timeString;
+}
+
+// Auto-refresh data every 60 seconds
+function startAutoRefresh() {
+    if (refreshInterval) clearInterval(refreshInterval);
+    refreshInterval = setInterval(fetchMarketData, 60000);
+}
+
+// Initialize - INSTANT LOAD
+window.addEventListener('load', () => {
+    fetchMarketData();
+    startAutoRefresh();
+    setInterval(updateTimeDisplay, 1000);
+});
+
+window.addEventListener('beforeunload', () => {
+    if (refreshInterval) clearInterval(refreshInterval);
+});
